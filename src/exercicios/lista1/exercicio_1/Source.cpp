@@ -1,12 +1,3 @@
-/* Hello Triangle - c�digo adaptado de https://learnopengl.com/#!Getting-started/Hello-Triangle 
- *
- * Adaptado por Rossana Baptista Queiroz
- * para a disciplina de Processamento Gr�fico - Jogos Digitais - Unisinos
- * Vers�o inicial: 7/4/2017
- * �ltima atualiza��o em 05/03/2022
- *
- */
-
 #include <iostream>
 #include <string>
 #include <assert.h>
