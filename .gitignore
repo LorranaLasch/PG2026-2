@@ -1,34 +1,48 @@
-# Ignorar a pasta de build e arquivos temporários do CMake
+# Build do CMake
 /build/
 /CMakeCache.txt
 /CMakeFiles/
 /Makefile
 /cmake_install.cmake
+CMakeUserPresets.json
 
-# Ignorar arquivos de saída do compilador (objetos e executáveis)
+# Dependências baixadas automaticamente pelo FetchContent do CMake
+_deps/
+_build/
+glfw-src/
+glfw-build/
+external/
+
+# Arquivos de saída do compilador e binários executáveis
 *.o
 *.obj
 *.exe
 *.out
 *.a
 *.lib
+!Common/lib/*.a
 *.dll
 *.so
+app
+a.out
 
-# Ignorar dependências baixadas automaticamente pelo CMake 
-_build/
-_deps/
-glfw-src/
-glfw-build/
-external/
-
-# Ignorar configurações específicas do VSCode
+# Arquivos temporários e de configuração da IDE (VS Code / Visual Studio)
 .vscode/
-CMakeUserPresets.json
+.vs/
+*.VC.db
+*.vcxproj.user
+*.opensdf
+*.sdf
+*.suo
+*.user
+*.userosv
+*.sln.docstates
+*.idb
+*.pdb
+*.ilk
 
-# Ignorar logs e arquivos de sistema
-*.log
+# Sistema Operacional
 .DS_Store
 Thumbs.db
-
-
+desktop.ini
+*.log

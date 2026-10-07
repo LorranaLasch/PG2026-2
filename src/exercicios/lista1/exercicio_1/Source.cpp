@@ -10,229 +10,260 @@ using namespace std;
 // GLFW
 #include <GLFW/glfw3.h>
 
-// Biblioteca manual pra implementação dos shaders
-#include "../../../commonfiles/Shader.h"
-
-// Prot�tipo da fun��o de callback de teclado
+// Protótipos das funções
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
-
-// Prot�tipos das fun��es
+int setupShader();
 int setupGeometry();
 
-// Dimens�es da janela (pode ser alterado em tempo de execu��o)
+// Dimensões da janela
 const GLuint WIDTH = 800, HEIGHT = 600;
 
-// Fun��o MAIN
+// Modo de desenho (1 = preenchido, 2 = contorno, 3 = pontos, 4 = os 3 juntos)
+int drawMode = 4;
+
+// Código fonte do Vertex Shader em GLSL
+const GLchar* vertexShaderSource = R"glsl(
+#version 330 core
+layout (location = 0) in vec3 position;
+void main()
+{
+    gl_Position = vec4(position.x, position.y, position.z, 1.0);
+}
+)glsl";
+
+// Código fonte do Fragment Shader em GLSL
+const GLchar* fragmentShaderSource = R"glsl(
+#version 330 core
+uniform vec4 inputColor;
+out vec4 color;
+void main()
+{
+    color = inputColor;
+}
+)glsl";
+
 int main()
 {
-	// Inicializa��o da GLFW
-	glfwInit();
+    // Inicialização da GLFW
+    if (!glfwInit())
+    {
+        cerr << "Falha ao inicializar GLFW" << endl;
+        return -1;
+    }
 
-	//Muita aten��o aqui: alguns ambientes n�o aceitam essas configura��es
-	//Voc� deve adaptar para a vers�o do OpenGL suportada por sua placa
-	//Sugest�o: comente essas linhas de c�digo para desobrir a vers�o e
-	//depois atualize (por exemplo: 4.5 com 4 e 5)
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    // Criação da janela GLFW
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Exercicio 1 - Lorrana Lasch", nullptr, nullptr);
+    if (!window)
+    {
+        cerr << "Falha ao criar janela GLFW" << endl;
+        glfwTerminate();
+        return -1;
+    }
+    glfwMakeContextCurrent(window);
 
-	//Essencial para computadores da Apple
-//#ifdef __APPLE__
-//	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-//#endif
+    // Registra função de callback de teclado
+    glfwSetKeyCallback(window, key_callback);
 
-	// Cria��o da janela GLFW
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Exercicio 1 - Lorrana Lasch", nullptr, nullptr);
-	glfwMakeContextCurrent(window);
+    // GLAD: carrega ponteiros de funções da OpenGL
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        cerr << "Falha ao inicializar GLAD" << endl;
+        return -1;
+    }
 
-	// Fazendo o registro da fun��o de callback para a janela GLFW
-	glfwSetKeyCallback(window, key_callback);
+    // Informações da GPU e OpenGL
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    const GLubyte* version = glGetString(GL_VERSION);
+    cout << "=====================================================" << endl;
+    cout << "Exercicio 1 - Lorrana Lasch" << endl;
+    cout << "Renderer: " << renderer << endl;
+    cout << "OpenGL Version: " << version << endl;
+    cout << "-----------------------------------------------------" << endl;
+    cout << "Instrucoes do teclado:" << endl;
+    cout << " [1] - Apenas poligono preenchido (a)" << endl;
+    cout << " [2] - Apenas contorno (b)" << endl;
+    cout << " [3] - Apenas pontos (c)" << endl;
+    cout << " [4] - As 3 formas de desenho juntas (d) [PADRAO]" << endl;
+    cout << " [ESC] - Sair" << endl;
+    cout << "=====================================================" << endl;
 
-	// GLAD: carrega todos os ponteiros d fun��es da OpenGL
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    glViewport(0, 0, width, height);
 
-	}
+    // Compila e linka os shaders
+    GLuint shaderProgram = setupShader();
 
-	// Obtendo as informa��es de vers�o
-	const GLubyte* renderer = glGetString(GL_RENDERER); /* get renderer string */
-	const GLubyte* version = glGetString(GL_VERSION); /* version as a string */
-	cout << "Renderer: " << renderer << endl;
-	cout << "OpenGL version supported " << version << endl;
+    // Geometria dos 2 triângulos
+    GLuint VAO = setupGeometry();
 
-	// Definindo as dimens�es da viewport com as mesmas dimens�es da janela da aplica��o
-	int width, height;
-	glfwGetFramebufferSize(window, &width, &height);
-	glViewport(0, 0, width, height);
+    GLint colorLoc = glGetUniformLocation(shaderProgram, "inputColor");
+    assert(colorLoc > -1);
 
+    glUseProgram(shaderProgram);
 
-	// Compilando e buildando o programa de shader
-	Shader shader("../commonfiles/shaders/vertex.vs","../commonfiles/shaders/fragment.fs");
+    // Loop principal da aplicação
+    while (!glfwWindowShouldClose(window))
+    {
+        glfwPollEvents();
 
-	// Gerando um buffer simples, com a geometria de um tri�ngulo
-	GLuint VAO = setupGeometry();
-	
+        // Limpa a tela com fundo cinza claro
+        glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-	// Enviando a cor desejada (vec4) para o fragment shader
-	// Utilizamos a vari�veis do tipo uniform em GLSL para armazenar esse tipo de info
-	// que n�o est� nos buffers
-	GLint colorLoc = glGetUniformLocation(shader.ID, "inputColor");
-	assert(colorLoc > -1);
-	
-	glUseProgram(shader.ID);
+        glLineWidth(6.0f);
+        glPointSize(14.0f);
 
-	// Loop da aplica��o - "game loop"
-	while (!glfwWindowShouldClose(window))
-	{
-		// Checa se houveram eventos de input (key pressed, mouse moved etc.) e chama as fun��es de callback correspondentes
-		glfwPollEvents();
+        glBindVertexArray(VAO);
 
-		// Limpa o buffer de cor
-		glClearColor(0.8f, 0.8f, 0.8f, 1.0f); //cor de fundo
-		glClear(GL_COLOR_BUFFER_BIT);
+        // a) Polígono preenchido (se modo 1 ou 4)
+        if (drawMode == 1 || drawMode == 4)
+        {
+            // Triângulo 1 (cinza escuro)
+            glUniform4f(colorLoc, 0.35f, 0.35f, 0.35f, 1.0f);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		glLineWidth(10);
-		glPointSize(20);
+            // Triângulo 2 (cinza médio)
+            glUniform4f(colorLoc, 0.55f, 0.55f, 0.55f, 1.0f);
+            glDrawArrays(GL_TRIANGLES, 3, 3);
+        }
 
-		glBindVertexArray(VAO);
+        // b) Contorno (se modo 2 ou 4)
+        if (drawMode == 2 || drawMode == 4)
+        {
+            // Contorno do Triângulo 1 (preto)
+            glUniform4f(colorLoc, 0.0f, 0.0f, 0.0f, 1.0f);
+            glDrawArrays(GL_LINE_LOOP, 0, 3);
 
-		
-		// INICIO EXERCICIO
+            // Contorno do Triângulo 2 (preto)
+            glUniform4f(colorLoc, 0.0f, 0.0f, 0.0f, 1.0f);
+            glDrawArrays(GL_LINE_LOOP, 3, 3);
+        }
 
-		/*
+        // c) Pontos (se modo 3 ou 4)
+        if (drawMode == 3 || drawMode == 4)
+        {
+            // Pontos do Triângulo 1 (azul escuro / ciano)
+            glUniform4f(colorLoc, 0.1f, 0.2f, 0.8f, 1.0f);
+            glDrawArrays(GL_POINTS, 0, 3);
 
-		// a. Apenas com o polígono preenchido
+            // Pontos do Triângulo 2 (vermelho)
+            glUniform4f(colorLoc, 0.85f, 0.15f, 0.15f, 1.0f);
+            glDrawArrays(GL_POINTS, 3, 3);
+        }
 
-		glUniform4f(colorLoc, 0.4f, 0.4f, 0.4f, 1.0f);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
 
-		glUniform4f(colorLoc, 0.6f, 0.6f, 0.6f, 1.0f);
-		glDrawArrays(GL_TRIANGLES, 3, 3);
-		
-		// b. Apenas com contorno
+        glfwSwapBuffers(window);
+    }
 
-		glUniform4f(colorLoc, 0.0f, 0.0f, 0.0f, 1.0f);
-		glDrawArrays(GL_LINE_LOOP, 0, 3);
-
-		glUniform4f(colorLoc, 0.0f, 0.0f, 0.0f, 1.0f);
-		glDrawArrays(GL_LINE_LOOP, 3, 3);
-
-		// c. Apenas como pontos
-
-		glUniform4f(colorLoc, 0.6f, 0.6f, 0.6f, 1.0f);
-		glDrawArrays(GL_POINTS, 0, 3);
-
-		glUniform4f(colorLoc, 0.4f, 0.4f, 0.4f, 1.0f);
-		glDrawArrays(GL_POINTS, 3, 3);
-
-		*/
-
-		// d. Com as 3 formas de desenho juntas
-
-		// Triângulo 1
-		// Forma
-		glUniform4f(colorLoc, 0.4f, 0.4f, 0.4f, 1.0f);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-
-		// Contorno
-		glUniform4f(colorLoc, 0.0f, 0.0f, 0.0f, 1.0f);
-		glDrawArrays(GL_LINE_LOOP, 0, 3);
-
-		// Pontos
-		glUniform4f(colorLoc, 0.6f, 0.6f, 0.6f, 1.0f);
-		glDrawArrays(GL_POINTS, 0, 3);
-
-		// Triângulo 2
-		// Forma
-		glUniform4f(colorLoc, 0.6f, 0.6f, 0.6f, 1.0f);
-		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 3, 3);
-
-		// Contorno
-		glUniform4f(colorLoc, 0.0f, 0.0f, 0.0f, 1.0f);
-		glDrawArrays(GL_LINE_LOOP, 3, 3);
-
-		// Pontos
-		glUniform4f(colorLoc, 0.4f, 0.4f, 0.4f, 1.0f);
-		glDrawArrays(GL_POINTS, 3, 3);
-
-		// FIM EXERCICIO
-
-		glBindVertexArray(0);
-
-		// Troca os buffers da tela
-		glfwSwapBuffers(window);
-	}
-	// Pede pra OpenGL desalocar os buffers
-	glDeleteVertexArrays(1, &VAO);
-	// Finaliza a execu��o da GLFW, limpando os recursos alocados por ela
-	glfwTerminate();
-	return 0;
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteProgram(shaderProgram);
+    glfwTerminate();
+    return 0;
 }
 
-// Fun��o de callback de teclado - s� pode ter uma inst�ncia (deve ser est�tica se
-// estiver dentro de uma classe) - � chamada sempre que uma tecla for pressionada
-// ou solta via GLFW
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GL_TRUE);
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GL_TRUE);
+
+    if (key == GLFW_KEY_1 && action == GLFW_PRESS)
+    {
+        drawMode = 1;
+        cout << "[Modo 1 selecionado]: Apenas poligono preenchido (a)" << endl;
+    }
+    if (key == GLFW_KEY_2 && action == GLFW_PRESS)
+    {
+        drawMode = 2;
+        cout << "[Modo 2 selecionado]: Apenas contorno (b)" << endl;
+    }
+    if (key == GLFW_KEY_3 && action == GLFW_PRESS)
+    {
+        drawMode = 3;
+        cout << "[Modo 3 selecionado]: Apenas pontos (c)" << endl;
+    }
+    if (key == GLFW_KEY_4 && action == GLFW_PRESS)
+    {
+        drawMode = 4;
+        cout << "[Modo 4 selecionado]: As 3 formas de desenho juntas (d)" << endl;
+    }
 }
 
-// Esta fun��o est� bastante harcoded - objetivo � criar os buffers que armazenam a 
-// geometria de um tri�ngulo
-// Apenas atributo coordenada nos v�rtices
-// 1 VBO com as coordenadas, VAO com apenas 1 ponteiro para atributo
-// A fun��o retorna o identificador do VAO
+int setupShader()
+{
+    // Vertex Shader
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+
+    GLint success;
+    GLchar infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        cerr << "ERRO: Compilacao Vertex Shader falhou:\n" << infoLog << endl;
+    }
+
+    // Fragment Shader
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        cerr << "ERRO: Compilacao Fragment Shader falhou:\n" << infoLog << endl;
+    }
+
+    // Link do Programa de Shader
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        cerr << "ERRO: Link do Shader Program falhou:\n" << infoLog << endl;
+    }
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    return shaderProgram;
+}
+
 int setupGeometry()
 {
-	// Aqui setamos as coordenadas x, y e z do tri�ngulo e as armazenamos de forma
-	// sequencial, j� visando mandar para o VBO (Vertex Buffer Objects)
-	// Cada atributo do v�rtice (coordenada, cores, coordenadas de textura, normal, etc)
-	// Pode ser arazenado em um VBO �nico ou em VBOs separados
-	GLfloat vertices[] = {
-		// Triângulo 1
-		-0.7, -0.5, 0.0,
-		 0.1, -0.5, 0.0,
-		-0.3, 0.5, 0.0,
+    GLfloat vertices[] = {
+        // Triângulo 1 (Esquerda)
+        -0.7f, -0.5f, 0.0f,
+         0.1f, -0.5f, 0.0f,
+        -0.3f,  0.5f, 0.0f,
 
-		// Triângulo 2
-		-0.1, 0.5, 0.0,
-		 0.3, -0.5, 0.0,
-		 0.7, 0.5, 0.0,
-	};
+        // Triângulo 2 (Direita)
+        -0.1f,  0.5f, 0.0f,
+         0.3f, -0.5f, 0.0f,
+         0.7f,  0.5f, 0.0f
+    };
 
-	GLuint VBO, VAO;
+    GLuint VBO, VAO;
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	//Gera��o do identificador do VBO
-	glGenBuffers(1, &VBO);
-	//Faz a conex�o (vincula) do buffer como um buffer de array
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	//Envia os dados do array de floats para o buffer da OpenGl
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
 
-	//Gera��o do identificador do VAO (Vertex Array Object)
-	glGenVertexArrays(1, &VAO);
-	// Vincula (bind) o VAO primeiro, e em seguida  conecta e seta o(s) buffer(s) de v�rtices
-	// e os ponteiros para os atributos 
-	glBindVertexArray(VAO);
-	//Para cada atributo do vertice, criamos um "AttribPointer" (ponteiro para o atributo), indicando: 
-	// Localiza��o no shader * (a localiza��o dos atributos devem ser correspondentes no layout especificado no vertex shader)
-	// Numero de valores que o atributo tem (por ex, 3 coordenadas xyz) 
-	// Tipo do dado
-	// Se est� normalizado (entre zero e um)
-	// Tamanho em bytes 
-	// Deslocamento a partir do byte zero 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(0);
 
-	// Observe que isso � permitido, a chamada para glVertexAttribPointer registrou o VBO como o objeto de buffer de v�rtice 
-	// atualmente vinculado - para que depois possamos desvincular com seguran�a
-	glBindBuffer(GL_ARRAY_BUFFER, 0); 
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
-	// Desvincula o VAO (� uma boa pr�tica desvincular qualquer buffer ou array para evitar bugs medonhos)
-	glBindVertexArray(0); 
-
-	return VAO;
+    return VAO;
 }

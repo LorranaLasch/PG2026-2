@@ -1,7 +1,8 @@
 #include <iostream>
 #include <string>
-#include <assert.h>
+#include <vector>
 #include <cmath>
+#include <assert.h>
 
 using namespace std;
 
@@ -11,176 +12,386 @@ using namespace std;
 // GLFW
 #include <GLFW/glfw3.h>
 
-// Biblioteca manual pra implementação dos shaders
-#include "../../../commonfiles/Shader.h"
-
-// Protótipo da função de callback de teclado
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
-
 // Protótipos das funções
-int setupGeometryFormas();
-int setupGeometryEspiral();
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+int setupShader();
+
+// Funções para geração das geometrias paramétricas
+GLuint createParametricShape(int nSlices, float startAngle, float endAngle, float r1, float r2, bool hasCenter, bool alternateRadius, int& outCount);
+GLuint createSpiral(int nPoints, float maxAngle, float maxRadius, float centerX, int& outCount);
 
 // Dimensões da janela
 const GLuint WIDTH = 800, HEIGHT = 600;
-const float pi = 3.14159;
+const float PI = 3.14159265358979323846f;
+
+// Identificadores de geometrias
+enum ShapeType {
+    SHAPE_CIRCLE = 0,     // Círculo base
+    SHAPE_OCTAGON = 1,    // a) Octógono (8 lados)
+    SHAPE_PENTAGON = 2,   // b) Pentágono (5 lados)
+    SHAPE_PACMAN = 3,     // c) Pac-man
+    SHAPE_PIZZA = 4,      // d) Fatia de pizza
+    SHAPE_STAR = 5,       // e) Desafio 1: Estrela
+    SHAPE_SPIRAL = 6,     // f) Desafio 2: Espiral
+    SHAPE_DUAL = 7        // Estrela + Espiral lado a lado (modo original)
+};
+
+ShapeType currentShape = SHAPE_CIRCLE;
+
+// Estrutura para armazenar cada forma
+struct Geometry {
+    GLuint vao;
+    int vertexCount;
+    GLenum primitive;
+    float r, g, b;
+    string name;
+};
+
+Geometry shapes[8];
+
+// Código fonte do Vertex Shader
+const GLchar* vertexShaderSource = R"glsl(
+#version 330 core
+layout (location = 0) in vec3 position;
+void main()
+{
+    gl_Position = vec4(position.x, position.y, position.z, 1.0);
+}
+)glsl";
+
+// Código fonte do Fragment Shader
+const GLchar* fragmentShaderSource = R"glsl(
+#version 330 core
+uniform vec4 inputColor;
+out vec4 color;
+void main()
+{
+    color = inputColor;
+}
+)glsl";
 
 int main()
 {
-	glfwInit();
+    if (!glfwInit())
+    {
+        cerr << "Falha ao inicializar GLFW" << endl;
+        return -1;
+    }
 
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Exercicio 2 e Desafio - Lorrana Lasch", nullptr, nullptr);
-	glfwMakeContextCurrent(window);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Exercicio 2 - Geometria Parametrica - Lorrana Lasch", nullptr, nullptr);
+    if (!window)
+    {
+        cerr << "Falha ao criar janela GLFW" << endl;
+        glfwTerminate();
+        return -1;
+    }
+    glfwMakeContextCurrent(window);
 
-	glfwSetKeyCallback(window, key_callback);
+    glfwSetKeyCallback(window, key_callback);
 
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
-	}
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        cerr << "Falha ao inicializar GLAD" << endl;
+        return -1;
+    }
 
-	int width, height;
-	glfwGetFramebufferSize(window, &width, &height);
-	glViewport(0, 0, width, height);
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    const GLubyte* version = glGetString(GL_VERSION);
+    cout << "============================================================" << endl;
+    cout << "Exercicio 2: Geometria Parametrica - Lorrana Lasch" << endl;
+    cout << "Renderer: " << renderer << endl;
+    cout << "OpenGL Version: " << version << endl;
+    cout << "------------------------------------------------------------" << endl;
+    cout << "Controles pelo teclado para navegar nas formas solicitadas:" << endl;
+    cout << " [C] ou [1] - Circulo parametrico base" << endl;
+    cout << " [8] ou [2] - a) Octogono (8 vertices)" << endl;
+    cout << " [5] ou [3] - b) Pentagono (5 vertices)" << endl;
+    cout << " [P] ou [4] - c) Pac-man" << endl;
+    cout << " [F] ou [5] - d) Fatia de pizza" << endl;
+    cout << " [E] ou [6] - e) DESAFIO 1: Estrela (raios alternados)" << endl;
+    cout << " [S] ou [7] - f) DESAFIO 2: Espiral (raio crescente)" << endl;
+    cout << " [T] ou [8] - Estrela e Espiral lado a lado (modo comparativo)" << endl;
+    cout << " [ESC]      - Sair" << endl;
+    cout << "============================================================" << endl;
 
-	// Ajustando o caminho relativo: como você roda de dentro da pasta "build", voltamos apenas 1 nível ("../")
-	Shader shader("../commonfiles/shaders/vertex.vs","../commonfiles/shaders/fragment.fs");
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    glViewport(0, 0, width, height);
 
-	// Gerando os dois buffers separados
-	GLuint VAO_formas = setupGeometryFormas();
-	GLuint VAO_espiral = setupGeometryEspiral();
-	
-	GLint colorLoc = glGetUniformLocation(shader.ID, "inputColor");
-	assert(colorLoc > -1);
-	
-	glUseProgram(shader.ID);
+    GLuint shaderProgram = setupShader();
+    GLint colorLoc = glGetUniformLocation(shaderProgram, "inputColor");
+    assert(colorLoc > -1);
 
-	while (!glfwWindowShouldClose(window))
-	{
-		glfwPollEvents();
+    // 0. Círculo base (64 fatias)
+    shapes[SHAPE_CIRCLE].vao = createParametricShape(64, 0.0f, 2.0f * PI, 0.5f, 0.5f, true, false, shapes[SHAPE_CIRCLE].vertexCount);
+    shapes[SHAPE_CIRCLE].primitive = GL_TRIANGLE_FAN;
+    shapes[SHAPE_CIRCLE].r = 0.2f; shapes[SHAPE_CIRCLE].g = 0.6f; shapes[SHAPE_CIRCLE].b = 0.9f;
+    shapes[SHAPE_CIRCLE].name = "Circulo Parametrico Base";
 
-		glClearColor(0.8f, 0.8f, 0.8f, 1.0f); // cor de fundo
-		glClear(GL_COLOR_BUFFER_BIT);
+    // 1. Octógono (8 fatias)
+    shapes[SHAPE_OCTAGON].vao = createParametricShape(8, 0.0f, 2.0f * PI, 0.5f, 0.5f, true, false, shapes[SHAPE_OCTAGON].vertexCount);
+    shapes[SHAPE_OCTAGON].primitive = GL_TRIANGLE_FAN;
+    shapes[SHAPE_OCTAGON].r = 0.3f; shapes[SHAPE_OCTAGON].g = 0.8f; shapes[SHAPE_OCTAGON].b = 0.4f;
+    shapes[SHAPE_OCTAGON].name = "a) Octogono";
 
-		glLineWidth(2);
-		glPointSize(10);
+    // 2. Pentágono (5 fatias)
+    shapes[SHAPE_PENTAGON].vao = createParametricShape(5, 0.0f, 2.0f * PI, 0.5f, 0.5f, true, false, shapes[SHAPE_PENTAGON].vertexCount);
+    shapes[SHAPE_PENTAGON].primitive = GL_TRIANGLE_FAN;
+    shapes[SHAPE_PENTAGON].r = 0.9f; shapes[SHAPE_PENTAGON].g = 0.5f; shapes[SHAPE_PENTAGON].b = 0.2f;
+    shapes[SHAPE_PENTAGON].name = "b) Pentagono";
 
-		// ==========================================
-		// DESENHANDO O EXERCÍCIO 2 (Estrela) na esquerda
-		// ==========================================
-		glBindVertexArray(VAO_formas);
-		glUniform4f(colorLoc, 0.4f, 0.4f, 0.4f, 1.0f); // Cor cinza escuro
-		glDrawArrays(GL_TRIANGLE_FAN, 0, 12); // 10 pontos + centro + 1 pra fechar
+    // 3. Pac-man (arco de 30 graus a 330 graus)
+    shapes[SHAPE_PACMAN].vao = createParametricShape(50, PI / 6.0f, 11.0f * PI / 6.0f, 0.5f, 0.5f, true, false, shapes[SHAPE_PACMAN].vertexCount);
+    shapes[SHAPE_PACMAN].primitive = GL_TRIANGLE_FAN;
+    shapes[SHAPE_PACMAN].r = 1.0f; shapes[SHAPE_PACMAN].g = 0.9f; shapes[SHAPE_PACMAN].b = 0.0f; // Amarelo
+    shapes[SHAPE_PACMAN].name = "c) Pac-man";
 
-		// ==========================================
-		// DESENHANDO O DESAFIO 2 (Espiral) na direita
-		// ==========================================
-		glBindVertexArray(VAO_espiral);
-		glUniform4f(colorLoc, 0.8f, 0.0f, 0.0f, 1.0f); // Cor vermelha
-		glDrawArrays(GL_LINE_STRIP, 1, 1000); // 1000 pontos da espiral
+    // 4. Fatia de pizza (arco de 60 graus)
+    shapes[SHAPE_PIZZA].vao = createParametricShape(16, -PI / 6.0f, PI / 6.0f, 0.55f, 0.55f, true, false, shapes[SHAPE_PIZZA].vertexCount);
+    shapes[SHAPE_PIZZA].primitive = GL_TRIANGLE_FAN;
+    shapes[SHAPE_PIZZA].r = 0.95f; shapes[SHAPE_PIZZA].g = 0.65f; shapes[SHAPE_PIZZA].b = 0.15f;
+    shapes[SHAPE_PIZZA].name = "d) Fatia de Pizza";
 
-		glBindVertexArray(0);
+    // 5. Estrela (10 pontos alternando r=0.5f e r=0.2f)
+    shapes[SHAPE_STAR].vao = createParametricShape(10, 0.0f, 2.0f * PI, 0.5f, 0.2f, true, true, shapes[SHAPE_STAR].vertexCount);
+    shapes[SHAPE_STAR].primitive = GL_TRIANGLE_FAN;
+    shapes[SHAPE_STAR].r = 0.95f; shapes[SHAPE_STAR].g = 0.8f; shapes[SHAPE_STAR].b = 0.1f;
+    shapes[SHAPE_STAR].name = "e) DESAFIO 1: Estrela";
 
-		glfwSwapBuffers(window);
-	}
-	
-	glDeleteVertexArrays(1, &VAO_formas);
-	glDeleteVertexArrays(1, &VAO_espiral);
-	glfwTerminate();
-	return 0;
+    // 6. Espiral (1000 pontos, raio crescendo de 0 até 0.5)
+    shapes[SHAPE_SPIRAL].vao = createSpiral(1000, 6.0f * PI, 0.5f, 0.0f, shapes[SHAPE_SPIRAL].vertexCount);
+    shapes[SHAPE_SPIRAL].primitive = GL_LINE_STRIP;
+    shapes[SHAPE_SPIRAL].r = 0.85f; shapes[SHAPE_SPIRAL].g = 0.15f; shapes[SHAPE_SPIRAL].b = 0.15f;
+    shapes[SHAPE_SPIRAL].name = "f) DESAFIO 2: Espiral";
+
+    // 7. Geometrias auxiliares para o modo dual (estrela à esquerda e espiral à direita)
+    int starDualCount = 0;
+    int spiralDualCount = 0;
+    GLuint starDualVAO = createParametricShape(10, 0.0f, 2.0f * PI, 0.4f, 0.16f, true, true, starDualCount);
+    GLuint spiralDualVAO = createSpiral(1000, 6.0f * PI, 0.38f, 0.5f, spiralDualCount);
+
+    glUseProgram(shaderProgram);
+
+    while (!glfwWindowShouldClose(window))
+    {
+        glfwPollEvents();
+
+        glClearColor(0.85f, 0.85f, 0.85f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glLineWidth(2.5f);
+        glPointSize(8.0f);
+
+        if (currentShape == SHAPE_DUAL)
+        {
+            // Modo comparativo: Estrela na esquerda e Espiral na direita
+            glBindVertexArray(starDualVAO);
+            glUniform4f(colorLoc, 0.35f, 0.35f, 0.35f, 1.0f);
+            glDrawArrays(GL_TRIANGLE_FAN, 0, starDualCount);
+
+            glBindVertexArray(spiralDualVAO);
+            glUniform4f(colorLoc, 0.85f, 0.1f, 0.1f, 1.0f);
+            glDrawArrays(GL_LINE_STRIP, 0, spiralDualCount);
+        }
+        else
+        {
+            // Desenha a forma atualmente selecionada centralizada
+            const Geometry& g = shapes[currentShape];
+            glBindVertexArray(g.vao);
+            glUniform4f(colorLoc, g.r, g.g, g.b, 1.0f);
+            glDrawArrays(g.primitive, 0, g.vertexCount);
+
+            // Se for polígono, adiciona um contorno sutil preto para acabamento bonito
+            if (g.primitive == GL_TRIANGLE_FAN)
+            {
+                glUniform4f(colorLoc, 0.1f, 0.1f, 0.1f, 1.0f);
+                glDrawArrays(GL_LINE_LOOP, 1, g.vertexCount - 1);
+            }
+        }
+
+        glBindVertexArray(0);
+        glfwSwapBuffers(window);
+    }
+
+    for (int i = 0; i < 7; ++i)
+        glDeleteVertexArrays(1, &shapes[i].vao);
+
+    glDeleteVertexArrays(1, &starDualVAO);
+    glDeleteVertexArrays(1, &spiralDualVAO);
+    glDeleteProgram(shaderProgram);
+    glfwTerminate();
+    return 0;
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GL_TRUE);
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GL_TRUE);
+
+    if (action == GLFW_PRESS)
+    {
+        if (key == GLFW_KEY_C || key == GLFW_KEY_1)
+        {
+            currentShape = SHAPE_CIRCLE;
+            cout << ">> " << shapes[currentShape].name << endl;
+        }
+        else if (key == GLFW_KEY_8 || key == GLFW_KEY_2)
+        {
+            currentShape = SHAPE_OCTAGON;
+            cout << ">> " << shapes[currentShape].name << endl;
+        }
+        else if (key == GLFW_KEY_5 || key == GLFW_KEY_3)
+        {
+            currentShape = SHAPE_PENTAGON;
+            cout << ">> " << shapes[currentShape].name << endl;
+        }
+        else if (key == GLFW_KEY_P || key == GLFW_KEY_4)
+        {
+            currentShape = SHAPE_PACMAN;
+            cout << ">> " << shapes[currentShape].name << endl;
+        }
+        else if (key == GLFW_KEY_F || key == GLFW_KEY_5)
+        {
+            currentShape = SHAPE_PIZZA;
+            cout << ">> " << shapes[currentShape].name << endl;
+        }
+        else if (key == GLFW_KEY_E || key == GLFW_KEY_6)
+        {
+            currentShape = SHAPE_STAR;
+            cout << ">> " << shapes[currentShape].name << endl;
+        }
+        else if (key == GLFW_KEY_S || key == GLFW_KEY_7)
+        {
+            currentShape = SHAPE_SPIRAL;
+            cout << ">> " << shapes[currentShape].name << endl;
+        }
+        else if (key == GLFW_KEY_T || key == GLFW_KEY_D || key == GLFW_KEY_8)
+        {
+            currentShape = SHAPE_DUAL;
+            cout << ">> Modo comparativo: Estrela + Espiral lado a lado" << endl;
+        }
+    }
 }
 
-// Geometria do Exercício 2 (Estrela) deslocada para a ESQUERDA
-int setupGeometryFormas()
+// Criação de formas paramétricas circulares e derivadas com GL_TRIANGLE_FAN
+GLuint createParametricShape(int nSlices, float startAngle, float endAngle, float r1, float r2, bool hasCenter, bool alternateRadius, int& outCount)
 {
-	const int nPoints = 10 + 1 + 1; // Exercicio 6e (Estrela de 5 pontas = 10 vértices no contorno)
-	GLfloat* vertices = new GLfloat[nPoints * 3];
+    vector<GLfloat> vertices;
 
-	float angle = 0.0;
-	float deltaAngle = 2 * pi / (float)(nPoints - 2);
-	float radius = 0.5;
-	
-	// Adicionar o centro (deslocado para a esquerda em X = -0.5)
-	vertices[0] = -0.5; // x
-	vertices[1] = 0.0;  // y
-	vertices[2] = 0.0;  // z
+    // Vértice central
+    if (hasCenter)
+    {
+        vertices.push_back(0.0f);
+        vertices.push_back(0.0f);
+        vertices.push_back(0.0f);
+    }
 
-	for (int i = 3; i < nPoints * 3; i += 3)
-	{
-		if(i % 2 == 0)
-			radius = 0.2;
-		else
-			radius = 0.5;
+    float deltaAngle = (endAngle - startAngle) / (float)nSlices;
+    int totalSteps = nSlices + (abs(endAngle - startAngle - 2.0f * PI) < 0.001f ? 1 : 1);
 
-		vertices[i] = (radius * cos(angle)) - 0.5; // Deslocado para a esquerda
-		vertices[i+1] = radius * sin(angle);
-		vertices[i+2] = 0.0;
+    for (int i = 0; i <= nSlices; ++i)
+    {
+        float angle = startAngle + i * deltaAngle;
+        float radius = (alternateRadius && (i % 2 == 1)) ? r2 : r1;
 
-		angle += deltaAngle;
-	}
+        vertices.push_back(radius * cos(angle));
+        vertices.push_back(radius * sin(angle));
+        vertices.push_back(0.0f);
+    }
 
-	GLuint VBO, VAO;
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, nPoints * 3 * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+    outCount = vertices.size() / 3;
 
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
+    GLuint VBO, VAO;
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0); 
-	glBindVertexArray(0); 
-	delete[] vertices; // Libera a memória
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(0);
 
-	return VAO;
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    return VAO;
 }
 
-// Geometria do Desafio 2 (Espiral) deslocada para a DIREITA
-int setupGeometryEspiral()
+// Criação da espiral paramétrica de Arquimedes (r = a * theta)
+GLuint createSpiral(int nPoints, float maxAngle, float maxRadius, float centerX, int& outCount)
 {
-	const int nPoints = 1000 + 1 + 1;
-	GLfloat* vertices = new GLfloat[nPoints * 3];
+    vector<GLfloat> vertices;
+    float deltaAngle = maxAngle / (float)(nPoints - 1);
+    float radiusIncrement = maxRadius / (float)(nPoints - 1);
 
-	float angle = 0.0;
-	float deltaAngle = 6 * pi / (float)(nPoints - 2);
-	float radius = 0.0;
-	float radiusIncrement = 0.4 / (float)(nPoints - 2); // Deixei um pouco menor pra caber melhor
-	
-	// Adicionar o centro (deslocado para a direita em X = +0.5)
-	vertices[0] = 0.5; // x
-	vertices[1] = 0.0; // y
-	vertices[2] = 0.0; // z
+    for (int i = 0; i < nPoints; ++i)
+    {
+        float angle = i * deltaAngle;
+        float radius = i * radiusIncrement;
 
-	for (int i = 3; i < nPoints * 3; i += 3)
-	{
-		vertices[i] = (radius * cos(angle)) + 0.5; // Deslocado para a direita
-		vertices[i+1] = radius * sin(angle);
-		vertices[i+2] = 0.0;
+        vertices.push_back(centerX + radius * cos(angle));
+        vertices.push_back(radius * sin(angle));
+        vertices.push_back(0.0f);
+    }
 
-		angle += deltaAngle;
-		radius += radiusIncrement;
-	}
+    outCount = vertices.size() / 3;
 
-	GLuint VBO, VAO;
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, nPoints * 3 * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+    GLuint VBO, VAO;
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STATIC_DRAW);
 
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0); 
-	glBindVertexArray(0); 
-	delete[] vertices; // Libera a memória
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
-	return VAO;
+    return VAO;
+}
+
+int setupShader()
+{
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+
+    GLint success;
+    GLchar infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        cerr << "ERRO: Compilacao Vertex Shader falhou:\n" << infoLog << endl;
+    }
+
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        cerr << "ERRO: Compilacao Fragment Shader falhou:\n" << infoLog << endl;
+    }
+
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        cerr << "ERRO: Link do Shader Program falhou:\n" << infoLog << endl;
+    }
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    return shaderProgram;
 }

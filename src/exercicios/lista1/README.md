@@ -1,59 +1,79 @@
 # Lista 1 - Primitivas Gráficas, Shaders & Buffers
 
-Este diretório contém as resoluções da Lista 1 da disciplina de Processamento Gráfico. Abaixo estão os detalhes de cada exercício desenvolvido, juntamente com as respostas teóricas.
+**Aluna:** Lorrana Lasch  
+**Disciplina:** Processamento Gráfico: Fundamentos — Unisinos
+
+Este diretório contém a implementação completa da **Lista de Exercícios 1**, abordando primitivas gráficas do OpenGL, shaders em GLSL, buffers (VBO/VAO), geometria paramétrica e desenho livre.
 
 ---
 
-## Exercício 1: Desenho de dois triângulos
-**Objetivo:** Praticar a utilização de diferentes primitivas gráficas do OpenGL.
+## 📌 Exercício 1: Desenho de dois triângulos
+**Objetivo:** Praticar a utilização de diferentes primitivas gráficas do OpenGL (preenchido, contorno, pontos e as 3 formas juntas).
 
-**Descrição:** 
-A partir de vértices definidos manualmente no código, o programa desenha duas formas triangulares (semelhante a uma "gravata borboleta"). O código foi preparado para demonstrar a renderização do OpenGL de 4 maneiras diferentes através das chamadas de desenho:
-- Polígono preenchido (`GL_TRIANGLES`)
-- Apenas contorno (`GL_LINE_LOOP`)
-- Apenas pontos (`GL_POINTS`)
-- As três formas combinadas (todas as primitivas executadas em sequência)
-
----
-
-## Exercício 2: Geometria Paramétrica (Desafios)
-**Objetivo:** Utilizar equações paramétricas envolvendo trigonometria (seno e cosseno) para gerar as posições dos vértices e formar objetos circulares e derivados.
-
-**Descrição:** 
-Neste exercício, foram implementados os dois Desafios finais propostos. As duas formas são renderizadas lado a lado na mesma janela utilizando translações diretas na matemática de construção do VAO:
-- **Estrela (Desafio 1):** Utilizando a primitiva `GL_TRIANGLE_FAN`, a lógica intercala o tamanho do raio a cada vértice processado pelo loop, formando as pontas da estrela.
-- **Espiral (Desafio 2):** Utilizando a primitiva `GL_LINE_STRIP`, o laço de repetição aumenta continuamente não apenas o ângulo (θ), mas também o raio (r) de forma linear e gradativa.
+**Descrição e Interatividade:**
+A geometria define dois triângulos opostos formando uma figura semelhante a uma gravata borboleta. Para que todas as opções solicitadas possam ser avaliadas dinamicamente na mesma execução, implementou-se controle interativo pelo teclado:
+- **`[1]`** - Apenas polígono preenchido (`GL_TRIANGLES`)
+- **`[2]`** - Apenas contorno (`GL_LINE_LOOP`)
+- **`[3]`** - Apenas pontos (`GL_POINTS`)
+- **`[4]`** - As 3 formas de desenho juntas (`GL_TRIANGLES` + `GL_LINE_LOOP` + `GL_POINTS`) **[Padrão]**
 
 ---
 
-## Exercício 3: Triângulo Interpolado RGB
-**Objetivo:** Entender e configurar buffers (VAO e VBO) intercalados (interleaved data), passando tanto dados de posição quanto de cores diretamente pelo Vertex Shader.
+## 📌 Exercício 2: Geometria Paramétrica & Desafios
+**Objetivo:** Gerar formas circulares e derivadas a partir da equação paramétrica do círculo:
+$$x = r \cdot \cos(\theta), \quad y = r \cdot \sin(\theta)$$
 
-**Respostas Teóricas:**
+**Formas Implementadas e Controles pelo Teclado:**
+O programa permite visualizar todas as formas solicitadas alternando pelas seguintes teclas:
+- **`[C]` ou `[1]`** - **Círculo base:** Gerado com 64 fatias angulares em `GL_TRIANGLE_FAN`.
+- **`[8]` ou `[2]`** - **a) Octógono:** Polígono regular de 8 vértices no contorno.
+- **`[5]` ou `[3]`** - **b) Pentágono:** Polígono regular de 5 vértices no contorno.
+- **`[P]` ou `[4]`** - **c) Pac-man:** Arco circular variando de $30^\circ$ a $330^\circ$, simulando a boca aberta.
+- **`[F]` ou `[5]`** - **d) Fatia de Pizza:** Setor circular de $60^\circ$ conectado ao vértice central.
+- **`[E]` ou `[6]`** - **e) DESAFIO 1 (Estrela):** 10 vértices de contorno com raios alternados (maior e menor) usando `GL_TRIANGLE_FAN`.
+- **`[S]` ou `[7]`** - **f) DESAFIO 2 (Espiral):** Espiral de Arquimedes com 1000 pontos em `GL_LINE_STRIP`, incrementando o ângulo ($\theta$) e o raio ($r$) continuamente.
+- **`[T]` ou `[8]`** - **Modo Comparativo:** Renderiza a Estrela à esquerda e a Espiral à direita simultaneamente.
 
-**a) Descreva uma possível configuração dos buffers (VBO, VAO) para representá-lo:**
-> Foi utilizado um único VBO (Vertex Buffer Object) que armazena em um array sequencial e intercalado a posição e a cor de cada vértice: `[x, y, z, r, g, b, x, y, z, r, g, b...]`. 
-> Para o OpenGL saber ler isso, o VAO é configurado com dois ponteiros de atributos (`glVertexAttribPointer`):
-> 1. Ponteiro da Posição: Lê 3 floats, com offset começando no byte 0, tendo um passo (stride) total de 6 floats para encontrar a próxima posição.
-> 2. Ponteiro da Cor: Lê 3 floats, com offset começando no tamanho equivalente aos 3 primeiros floats passados, tendo também o passo de 6 floats.
+---
 
-**b) Como estes atributos seriam identificados no vertex shader?**
-> Eles são recebidos e identificados usando a diretiva `layout(location = X)`, correspondendo aos identificadores que habilitamos em C++ com `glEnableVertexAttribArray(X)`. No nosso código ficam assim:
-> ```glsl
-> layout (location = 0) in vec3 position; // recebe o (x,y,z)
-> layout (location = 1) in vec3 color;    // recebe o (r,g,b)
+## 📌 Exercício 3: Triângulo Interpolado RGB
+**Objetivo:** Compreender a configuração de buffers intercalados (*interleaved buffers*) e a passagem de atributos por vértice para interpolação na GPU.
+
+### 📝 Respostas Teóricas:
+
+#### a) Descreva uma possível configuração dos buffers (VBO, VAO) para representá-lo:
+> Utilizamos um único VBO (Vertex Buffer Object) armazenando as coordenadas de posição $(x, y, z)$ e os canais de cor $(r, g, b)$ de forma sequencial e intercalada no mesmo array de `GLfloat`:
 > ```
+> [x, y, z, r, g, b,  x, y, z, r, g, b,  x, y, z, r, g, b]
+> ```
+> Cada vértice consome 6 floats (24 bytes).  
+> No VAO (Vertex Array Object), configuramos dois ponteiros de atributos através da função `glVertexAttribPointer`:
+> 1. **Atributo 0 (Posição):** tamanho 3 floats, tipo `GL_FLOAT`, stride de $6 \times \text{sizeof(GLfloat)}$, offset no byte 0.
+> 2. **Atributo 1 (Cor):** tamanho 3 floats, tipo `GL_FLOAT`, stride de $6 \times \text{sizeof(GLfloat)}$, offset de $3 \times \text{sizeof(GLfloat)}$ (12 bytes).
 
-**Implementação:** 
-O código recria exatamente as posições pedidas no slide P1 (Vermelho), P2 (Verde) e P3 (Azul). A mágica da pintura acontece sozinha graças à forma com a qual o OpenGL rasteriza e interpola perfeitamente a variação das cores entre os pontos antes de enviá-las para o Fragment Shader.
+#### b) Como estes atributos seriam identificados no vertex shader?
+> No Vertex Shader (GLSL), declaramos os atributos com as localizações correspondentes:
+> ```glsl
+> #version 330 core
+> layout (location = 0) in vec3 position; // Recebe (x, y, z)
+> layout (location = 1) in vec3 vcolor;   // Recebe (r, g, b)
+> 
+> out vec4 interpolatedColor; // Exporta a cor para a fase de rasterização
+> 
+> void main() {
+>     gl_Position = vec4(position, 1.0);
+>     interpolatedColor = vec4(vcolor, 1.0);
+> }
+> ```
+> O hardware de rasterização da GPU calcula os gradientes barycêntricos e entrega a cor suavemente interpolada para o Fragment Shader através da variável de entrada `in vec4 interpolatedColor;`.
 
 ---
 
-## Exercício 4: Desenho Livre
-**Objetivo:** Praticar múltiplas chamadas de desenho, gerenciamento de cores via Variáveis `Uniform` e utilização criativa das primitivas gráficas.
+## 📌 Exercício 4: Desenho Livre (Chapéu de Bruxo)
+**Objetivo:** Criar uma composição gráfica original utilizando primitivas do OpenGL, múltiplas chamadas de desenho (`draw calls`) e controle de cores via variáveis `uniform`.
 
-**Descrição:** 
-O desenho livre elaborado no código é um **Chapéu de Bruxo**. Foram criados agrupamentos de vértices específicos para formar o objeto através de sobreposição e união de primitivas:
-1. **Aba:** Retângulo achatado na base desenhado com `GL_TRIANGLES`.
-2. **Cone do Chapéu:** Um triângulo alongado cuja ponta superior foi deslocada propositalmente para o eixo X positivo para simular o caimento de um chapéu torto.
-3. **Faixa e Fivela:** Foram desenhados usando `GL_TRIANGLES` agrupando pequenos quadrados (quads), e pintados trocando a variável de estado Uniform para roxo e dourado, respectivamente, antes da renderização de cada etapa.
+**Composição do Chapéu:**
+1. **Aba:** Retângulo largo na base (dois triângulos formando um quad) com coloração cinza grafite escuro (`GL_TRIANGLES`, 6 vértices).
+2. **Cone:** Triângulo alto com o vértice superior intencionalmente inclinado para a direita, conferindo o aspecto clássico de chapéu de bruxo pontudo dobrado (`GL_TRIANGLES`, 3 vértices).
+3. **Faixa:** Faixa decorativa ajustada logo acima da aba, renderizada em roxo místico (`GL_TRIANGLES`, 6 vértices).
+4. **Fivela:** Quadrado centralizado sobre a faixa, colorido em amarelo dourado via `uniform inputColor` (`GL_TRIANGLES`, 6 vértices).

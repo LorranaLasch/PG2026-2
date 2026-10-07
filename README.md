@@ -1,30 +1,39 @@
-# 💻 Processamento Gráfico 2026/2
+# 💻 Processamento Gráfico 2026/2 - Unisinos
 
-Repositório pessoal para o desenvolvimento e entrega das 
-atividades da disciplina de Processamento Gráfico: Fundamentos, do curso de 
-Ciência da Computação da Unisinos.
+Repositório pessoal para o desenvolvimento e entrega das atividades práticas da disciplina de **Processamento Gráfico: Fundamentos**, do curso de Ciência da Computação da Unisinos.
 
-## Atividades
+**Aluna:** Lorrana Lasch
 
-* [Lista 1](src/Exercicios/Lista1/)
+---
+
+## 📂 Estrutura do Repositório
+
+```plaintext
+📁 PG2026-2-Lorrana_Lasch/
+├── 📁 include/           # Cabeçalhos de bibliotecas (GLAD, GLFW, GLM, stb_image)
+├── 📁 Common/            # Códigos utilitários compartilhados (glad.c, Shader, etc.)
+├── 📁 src/               # Código-fonte
+│   ├── 📁 exemplos/      # Exemplos de aula (HelloTriangle, HelloOrtho)
+│   ├── 📁 exercicios/    # Listas práticas
+│   │   ├── 📁 lista1/    # Lista 1 - Primitivas, Shaders e Buffers
+│   │   ├── 📁 lista2/    # Lista 2 - Câmera 2D, Ortho e Viewports
+│   │   └── 📁 lista3/    # Lista 3 - Mouse e Transformações Geométricas
+│   └── 📁 TrabalhoPraticoGA/ # Trabalho Prático do Grau A (Jogo da Katniss)
+├── 📄 .gitignore         # Arquivos ignorados pelo Git
+├── 📄 CMakeLists.txt     # Script de compilação via CMake
+└── 📄 README.md          # Apresentação do repositório
+```
+
+---
 
 ## ⚙️ Como compilar e executar
 
-Este projeto usa **CMake** para compilação (Windows + VS Code).
+Este projeto utiliza **CMake** para configuração e compilação multiplataforma:
 
-1. Siga as instruções detalhadas em [GettingStarted.md](GettingStarted.md)
-2. **Importante:** é necessário baixar a GLAD manualmente antes de compilar 
-   (veja a seção abaixo)
-
-## Baixando a GLAD manualmente
-
-Acesse o [GLAD Generator](https://glad.dav1d.de/) com a configuração:
-- API: OpenGL
-- Version: 3.3+
-- Profile: Core
-- Language: C/C++
-
-Depois, distribua os arquivos gerados:
-- `glad.h` → `include/glad/`
-- `khrplatform.h` → `include/glad/KHR/`
-- `glad.c` → `common/`
+1. Abra a pasta do projeto no VS Code.
+2. Certifique-se de que os arquivos da biblioteca **GLAD** estão presentes em `include/glad/` e `Common/glad.c`.
+3. Pelo terminal ou extensão do CMake:
+   ```bash
+   cmake -B build
+   cmake --build build
+   ```
