@@ -7,7 +7,7 @@ Este diretório contém a resolução completa da **Lista 2**, abordando a Matri
 
 ---
 
-## 📌 Exercícios 1 a 5: Câmera Ortográfica & Viewports
+## Exercícios 1 a 5: Câmera Ortográfica & Viewports
 
 O executável correspondente está em `exercicio_1_a_5/` e permite alternar interativamente entre as configurações solicitadas usando as teclas **`[1]`** a **`[5]`**.
 
@@ -47,7 +47,7 @@ O executável correspondente está em `exercicio_1_a_5/` e permite alternar inte
 
 ---
 
-## 📌 Exercício 6: Criação de Triângulos com Clique do Mouse
+## Exercício 6: Criação de Triângulos com Clique do Mouse
 
 O executável correspondente está em `exercicio_6/` e foi construído com base nos exemplos da professora (`6.cpp`).
 
