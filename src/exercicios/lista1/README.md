@@ -7,7 +7,7 @@ Este diretório contém a implementação completa da **Lista de Exercícios 1**
 
 ---
 
-## 📌 Exercício 1: Desenho de dois triângulos
+## Exercício 1: Desenho de dois triângulos
 **Objetivo:** Praticar a utilização de diferentes primitivas gráficas do OpenGL (preenchido, contorno, pontos e as 3 formas juntas).
 
 **Descrição e Interatividade:**
@@ -19,7 +19,7 @@ A geometria define dois triângulos opostos formando uma figura semelhante a uma
 
 ---
 
-## 📌 Exercício 2: Geometria Paramétrica & Desafios
+## Exercício 2: Geometria Paramétrica & Desafios
 **Objetivo:** Gerar formas circulares e derivadas a partir da equação paramétrica do círculo:
 $$x = r \cdot \cos(\theta), \quad y = r \cdot \sin(\theta)$$
 
@@ -36,10 +36,10 @@ O programa permite visualizar todas as formas solicitadas alternando pelas segui
 
 ---
 
-## 📌 Exercício 3: Triângulo Interpolado RGB
+## Exercício 3: Triângulo Interpolado RGB
 **Objetivo:** Compreender a configuração de buffers intercalados (*interleaved buffers*) e a passagem de atributos por vértice para interpolação na GPU.
 
-### 📝 Respostas Teóricas:
+### Respostas Teóricas:
 
 #### a) Descreva uma possível configuração dos buffers (VBO, VAO) para representá-lo:
 > Utilizamos um único VBO (Vertex Buffer Object) armazenando as coordenadas de posição $(x, y, z)$ e os canais de cor $(r, g, b)$ de forma sequencial e intercalada no mesmo array de `GLfloat`:
@@ -69,7 +69,7 @@ O programa permite visualizar todas as formas solicitadas alternando pelas segui
 
 ---
 
-## 📌 Exercício 4: Desenho Livre (Chapéu de Bruxo)
+## Exercício 4: Desenho Livre (Chapéu de Bruxo)
 **Objetivo:** Criar uma composição gráfica original utilizando primitivas do OpenGL, múltiplas chamadas de desenho (`draw calls`) e controle de cores via variáveis `uniform`.
 
 **Composição do Chapéu:**
