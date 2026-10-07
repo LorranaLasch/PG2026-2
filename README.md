@@ -1,4 +1,4 @@
-# 💻 Processamento Gráfico 2026/2 - Unisinos
+# Processamento Gráfico 2026/2 - Unisinos
 
 Repositório pessoal para o desenvolvimento e entrega das atividades práticas da disciplina de **Processamento Gráfico: Fundamentos**, do curso de Ciência da Computação da Unisinos.
 
@@ -6,7 +6,7 @@ Repositório pessoal para o desenvolvimento e entrega das atividades práticas d
 
 ---
 
-## 📂 Estrutura do Repositório
+## Estrutura do Repositório
 
 ```plaintext
 📁 PG2026-2-Lorrana_Lasch/
@@ -26,7 +26,7 @@ Repositório pessoal para o desenvolvimento e entrega das atividades práticas d
 
 ---
 
-## ⚙️ Como compilar e executar
+## Como compilar e executar
 
 Este projeto utiliza **CMake** para configuração e compilação multiplataforma:
 
