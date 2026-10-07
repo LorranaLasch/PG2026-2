@@ -7,7 +7,7 @@ Este diretório contém a resolução da **Lista 3**, cobrindo o enunciado ofici
 
 ---
 
-## 📌 1. Entrega Oficial: Criando Triângulos a partir do Clique do Mouse
+## 1. Entrega Oficial: Criando Triângulos a partir do Clique do Mouse
 *(Conforme especificação do PDF da disciplina — `Lista 3.pdf`)*
 
 **Diretório:** `exercicio_mouse_triangulos/`  
@@ -26,7 +26,7 @@ Este diretório contém a resolução da **Lista 3**, cobrindo o enunciado ofici
 
 ---
 
-## 📌 2. Práticas de Transformações Geométricas em Objetos
+## 2. Práticas de Transformações Geométricas em Objetos
 *(Baseadas no exemplo oficial `HelloTransforms.cpp` da professora)*
 
 ### Exercício 1: Três Instâncias com Transformações Diferentes
