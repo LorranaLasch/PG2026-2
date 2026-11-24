@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Imagens salvas pelo app (geradas ao apertar S)
+saidas/
+
+# IDE / sistema operacional
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
