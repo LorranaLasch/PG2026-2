@@ -1,4 +1,4 @@
-# Stories FX: Efeitos em Imagens e Vídeo (Trabalho Prático - Grau B)
+# Efeitos em Imagens e Vídeo (Trabalho Prático - Grau B)
 
 **Aluna:** Lorrana Lasch (Trabalho Individual)  
 **Disciplina:** Processamento Gráfico: Fundamentos  
