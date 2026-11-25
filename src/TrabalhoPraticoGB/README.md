@@ -62,7 +62,7 @@ O app começa numa tela escura com dois botões: **Abrir foto** e **Ligar câmer
 | 🖼 **Foto** | Abre uma foto do computador |
 | 🎥 **Câmera** | Liga/desliga a webcam (ao parar, o último frame vira a foto) |
 | ⭐ **Stickers** | Abre a gaveta de stickers: escolha um e toque na imagem para colar. Ajuste o tamanho; botão direito remove o último |
-| 😺 **Rosto** | Stickers automáticos no rosto (orelhas de gato, óculos, coroa, gatinho completo) |
+| 😺 **Rosto** | Stickers automáticos no rosto (óculos pixel, orelhas de gato pretas, bigodes de gato, gatinho completo, símbolo de raiva anime) |
 | 🎨 **Cor/Canal** | Aplica os filtros na imagem colorida, em cinza ou só no canal Vermelho, Verde ou Azul; mostra a lista de filtros já aplicados |
 | ➕ **Misturar** | Operações com uma 2ª imagem: adição, subtração ponderada, blending, multiplicação e diferença |
 | ↶ **Desfazer** / ⟲ **Resetar** | Desfaz o último passo / volta à imagem original |
@@ -107,7 +107,7 @@ A **descrição de cada filtro** e dos seus parâmetros aparece no **console** a
 | **Clique esquerdo** | Coloca o sticker selecionado na posição do mouse |
 | **Clique direito** | Remove o último sticker colocado |
 | **`+`** / **`-`** | Aumenta / diminui o sticker |
-| **`F`** | Stickers automáticos no rosto: orelhas de gato → óculos → coroa → gatinho completo → desligado |
+| **`F`** | Stickers automáticos no rosto: óculos pixel → orelhas de gato pretas → bigodes de gato → gatinho completo → raiva anime → desligado |
 | **`S`** | Salva a imagem / frame atual em `saidas/` (sem o painel de informações) |
 | **`R`** | Reset: limpa filtros, operações, stickers e volta à imagem original |
 | **`U`** | Mostra/esconde o painel de informações |
@@ -173,10 +173,11 @@ A segunda imagem é redimensionada para o tamanho da imagem atual e passa pela m
 
 Ficam em `assets/stickers/` (PNG com canal alfa). A sobreposição usa *alpha blending*: `resultado = alfa * sticker + (1 - alfa) * fundo`.
 
-* `01_estrela`, `02_coracao`, `03_oculos`, `04_orelhas_gato`, `05_coroa`, `06_balao_uau`
+* **Stickers livres** (colados com o clique): `appa`, `bepo`, `chopper_roupao`, `luffy_bravo`, `favorite_person`, `iconic`, `it_for_science`, `nerd_alert`, `st_asas_anjo`
+* **Stickers de rosto** (também usados na detecção de face): `st_oculos_pixel`, `st_orelhas_gato_preto`, `st_bigodes_gato`, `st_raiva_anime`
 * `anim_estrela_8x1`: **sticker animado** feito com spritesheet (8 quadros em uma linha; o quadro exibido depende do tempo).
 
-Os stickers e a 2ª imagem padrão foram gerados por código em `gerar_assets.py` (rode `python gerar_assets.py` para recriá-los). Para adicionar um sticker novo basta colocar um PNG com transparência na pasta. Para um spritesheet, use o nome `anim_<nome>_<colunas>x<linhas>.png`.
+A 2ª imagem padrão (`assets/imagens/segunda.png`) e o spritesheet `anim_estrela_8x1.png` são gerados por código em `gerar_assets.py`. O script também cria alguns stickers simples desenhados com OpenCV (estrela, coração, óculos, orelhas de gato, coroa e balão), que não estão na pasta por padrão; rode `python gerar_assets.py` se quiser incluí-los. Se a `segunda.png` não existir, o app gera uma automaticamente. Para adicionar um sticker novo basta colocar um PNG com transparência na pasta. Para um spritesheet, use o nome `anim_<nome>_<colunas>x<linhas>.png`.
 
 ---
 
@@ -186,7 +187,7 @@ Os stickers e a 2ª imagem padrão foram gerados por código em `gerar_assets.py
 * **5 efeitos exclusivos** (duotone roxo, glitch RGB, neon, VHS e sonho), além dos 20 filtros clássicos.
 * **Combinação de filtros:** cada filtro/operação aplicado entra em uma pilha e é aplicado sobre o resultado do anterior (inclusive no vídeo, a cada frame). `Z` desfaz o último.
 * **Stickers animados:** spritesheet `anim_estrela_8x1.png`.
-* **Detecção de face (Haar Cascade):** com `F`, orelhas de gato, óculos, coroa ou um "filtro de gatinho" completo são posicionados automaticamente nos rostos detectados (funciona na foto e na webcam).
+* **Detecção de face (Haar Cascade):** com `F`, óculos pixel, orelhas de gato pretas, bigodes de gato, símbolo de raiva anime ou um "filtro de gatinho" completo são posicionados automaticamente nos rostos detectados (funciona na foto e na webcam).
 
 ---
 
@@ -206,7 +207,7 @@ Os stickers e a 2ª imagem padrão foram gerados por código em `gerar_assets.py
 ├── 📄 gerar_assets.py    # Gera os stickers e a 2ª imagem padrão
 ├── 📁 assets/
 │   ├── 📁 stickers/      # PNGs com canal alfa
-│   └── 📁 imagens/       # segunda.png (2ª imagem padrão das operações)
+│   └── 📁 imagens/       # fotos de exemplo e segunda.png (2ª imagem padrão das operações)
 ├── 📁 docs/              # Imagens usadas neste README
 ├── 📄 requirements.txt
 └── 📄 .gitignore

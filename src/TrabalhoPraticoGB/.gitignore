@@ -2,18 +2,18 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
-
-# Ambientes virtuais
 .venv/
 venv/
 env/
 
-# Imagens salvas pelo app (geradas ao apertar S)
+# Saídas geradas pelo app (imagens salvas)
 saidas/
 
-# IDE / sistema operacional
+# IDEs / editores
 .vscode/
 .idea/
+
+# Sistema operacional
 .DS_Store
 Thumbs.db
 desktop.ini

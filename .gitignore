@@ -1,48 +1,36 @@
-# Build do CMake
-/build/
-/CMakeCache.txt
-/CMakeFiles/
-/Makefile
-/cmake_install.cmake
-CMakeUserPresets.json
-
-# Dependências baixadas automaticamente pelo FetchContent do CMake
-_deps/
-_build/
-glfw-src/
-glfw-build/
-external/
-
-# Arquivos de saída do compilador e binários executáveis
+# Build (CMake / C++)
+build/
+out/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
 *.o
 *.obj
 *.exe
-*.out
-*.a
-*.lib
-!Common/lib/*.a
-*.dll
-*.so
-app
-a.out
-
-# Arquivos temporários e de configuração da IDE (VS Code / Visual Studio)
-.vscode/
-.vs/
-*.VC.db
-*.vcxproj.user
-*.opensdf
-*.sdf
-*.suo
-*.user
-*.userosv
-*.sln.docstates
-*.idb
 *.pdb
 *.ilk
+*.a.tmp
 
-# Sistema Operacional
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Saídas do app do Grau B
+src/TrabalhoPraticoGB/saidas/
+
+# IDEs / editores
+.vs/
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Sistema operacional
 .DS_Store
 Thumbs.db
 desktop.ini
-*.log
